@@ -19,7 +19,7 @@ class Rasp(SqlAlchemyBase):
     subject = orm.relationship('K_subject')
     teacher_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("teachers.id"), nullable=True)
     teacher = orm.relationship('K_teacher')
-    task = orm.relationship('Task', back_populates="rasp")
+    task = orm.relationship('Tasks', back_populates="rasp")
     # rasp_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("rasp.id"), nullable=True)
     # rasp = orm.relationship('Rasp')
     # task_type_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("rasp.id"), nullable=True)

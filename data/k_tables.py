@@ -101,6 +101,6 @@ class K_file_to_task(SqlAlchemyBase):
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
     task_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("tasks.id"), nullable=True)
-    task = orm.relationship('K_task')
+    task = orm.relationship('Tasks')
     file_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("files.id"), nullable=True)
-    file = orm.relationship('K_file')
+    file = orm.relationship('File')

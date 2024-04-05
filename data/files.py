@@ -12,4 +12,4 @@ class File(SqlAlchemyBase):
     modify_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                      default=datetime.datetime.now)
     creator = sqlalchemy.Column(sqlalchemy.String, nullable=True)
-    f_to_t = orm.relationship('K_file_to _task', back_populates='file')
+    f_to_t = orm.relationship('K_file_to_task', back_populates='file')
