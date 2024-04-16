@@ -1,86 +1,50 @@
-from telegram.ext import CommandHandler, Application, filters, MessageHandler
-from telegram import ReplyKeyboardMarkup
-import sqlite3
-
-BOT_TOKEN = "7087953766:AAHZhEaNOHUwuVr-49sizlgdCG-i7LgZz3w"
-
-hw = False
-
-st = [['/start']]
-basic = [['/admin_on'], ['/add_your_homework', '/get_homework'], ['/close']]
-ad_com = [['/set_homework'], ['/admin_off']]
-markup = ReplyKeyboardMarkup(basic, one_time_keyboard=False)
-admin_commands = ReplyKeyboardMarkup(ad_com, one_time_keyboard=False)
-starts = ReplyKeyboardMarkup(st, one_time_keyboard=False)
+import asyncio
+import logging
+from aiogram import F, Router
+from aiogram.filters import Command
+from aiogram.types import Message
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram import Bot, Dispatcher
+from aiogram.enums.parse_mode import ParseMode
+from aiogram.fsm.storage.memory import MemoryStorage
 
 
-async def echo(update, context):
-    global hw
-    sql = sqlite3.connect('something_test.sqlite')
-    cur = sql.cursor()
-    result = cur.execute("""INSERT INTO something(individual_hw) VALUES(?)""",
-                         (update.message.text, ))
-    hw = False
+def IKB(name, df):
+    return InlineKeyboardButton(text=name, callback_data=df)
 
 
-async def homework(update, context):
-    await update.message.reply_text(
-        "тут пока ничего нет")
+menus = [
+    [IKB("Добавить домашнее задание", "set_hw"),
+     IKB("Получить домашнее задание", "get_hw")],
+    [IKB("Расписание", "rasp")],
+    [IKB("Режим админа", "admin")]
+]
+men = InlineKeyboardMarkup(inline_keyboard=menus)
+
+greet_text = "Приветствую, {name}, это бот для школ \n \nУдачного использования"
+menu_text = "Функции"
+
+router = Router()
 
 
-async def admin_on(update, context):
-    await update.message.reply_text('вы вошли в режим админа',
-                                    reply_markup=admin_commands)
+@router.message(Command("start"))
+async def start_handler(msg: Message):
+    await msg.answer(greet_text.format(name=msg.from_user.full_name), reply_markup=men)
 
 
-async def admin_off(update, context):
-    await update.message.reply_text('вы больше не админ',
-                                    reply_markup=markup)
+@router.message(F.text.lower() == "меню")
+async def menu(msg: Message):
+    await msg.answer(menu_text, reply_markup=men)
 
 
-async def add_individual_hw(update, context):
-    global hw
-    hw = True
-    await update.message.reply_text(
-        "впишите вашу домашку")
+async def main():
+    bot = Bot(token="7087953766:AAHZhEaNOHUwuVr-49sizlgdCG-i7LgZz3w", parse_mode=ParseMode.HTML)
+    dp = Dispatcher(storage=MemoryStorage())
+    dp.include_router(router)
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 
-async def start(update, context):
-    await update.message.reply_text(
-        "работа начата",
-        reply_markup=markup
-    )
-
-
-async def get(update, context):
-    await update.message.reply_text('тут пока ничего нет')
-
-
-async def close(update, context):
-    await update.message.reply_text(
-        "работа окончена",
-        reply_markup=starts
-    )
-
-
-def main():
-    global hw
-    application = Application.builder().token(BOT_TOKEN).build()
-    if hw:
-        application.add_handler(MessageHandler(filters.TEXT, echo))
-
-    else:
-        application.add_handler(CommandHandler("admin_off", admin_off))
-        application.add_handler(CommandHandler("admin_on", admin_on))
-
-        application.add_handler(CommandHandler("get_homework", get))
-        application.add_handler(CommandHandler('close', close))
-        application.add_handler(CommandHandler("add_your_homework",
-                                               add_individual_hw))
-        application.add_handler((CommandHandler('set_homework', homework)))
-        application.add_handler(CommandHandler("start", start))
-    application.run_polling()
-
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(main())
