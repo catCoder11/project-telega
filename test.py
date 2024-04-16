@@ -1,12 +1,13 @@
 import asyncio
 import logging
-from aiogram import F, Router
+from aiogram import F, Router, types
 from aiogram.filters import Command
 from aiogram.types import Message
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram import Bot, Dispatcher
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.context import FSMContext
 
 
 def IKB(name, df):
@@ -19,12 +20,39 @@ menus = [
     [IKB("Расписание", "rasp")],
     [IKB("Режим админа", "admin")]
 ]
+
+dates = [
+    [IKB("Понедельник", "pn")],
+    [IKB("Вторник", "vt")],
+    [IKB("Среда", "sr")],
+    [IKB("Четверг", "ct")],
+    [IKB("Пятница", "pt")],
+    [IKB("Суббота", "sb")],
+    [IKB("Воскресение", "vs")],
+    [IKB('Следющая неделя', "next_week")]
+]
+
+yep = ["pn", "vt", "sr", "ct", "pt", "sb", "vs"]
+
 men = InlineKeyboardMarkup(inline_keyboard=menus)
+date = InlineKeyboardMarkup(inline_keyboard=dates)
 
 greet_text = "Приветствую, {name}, это бот для школ \n \nУдачного использования"
 menu_text = "Функции"
+set_date_text = "Выберите день недели"
+set_hw_text = 'Впишите ваше домашнее задание'
 
 router = Router()
+
+
+@router.callback_query(F.data == 'set_hw')
+async def set_date(call: types.CallbackQuery):
+    await call.message.answer(set_date_text, reply_markup=date)
+
+for i in yep:
+    @router.callback_query(F.data == i)
+    async def set_hw(call: types.CallbackQuery):
+        await call.message.answer(set_hw_text)
 
 
 @router.message(Command("start"))
@@ -33,6 +61,7 @@ async def start_handler(msg: Message):
 
 
 @router.message(F.text.lower() == "меню")
+@router.message(Command('menu'))
 async def menu(msg: Message):
     await msg.answer(menu_text, reply_markup=men)
 
