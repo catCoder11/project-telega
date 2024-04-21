@@ -7,7 +7,6 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram import Bot, Dispatcher
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.fsm.context import FSMContext
 
 
 def IKB(name, df):
@@ -32,14 +31,18 @@ dates = [
     [IKB('Следющая неделя', "next_week")]
 ]
 
+chooses = [[IKB('Текст', 'txt'), IKB("фото", "ft")]]
+
 yep = ["pn", "vt", "sr", "ct", "pt", "sb", "vs"]
 
 men = InlineKeyboardMarkup(inline_keyboard=menus)
 date = InlineKeyboardMarkup(inline_keyboard=dates)
+choose = InlineKeyboardMarkup(inline_keyboard=chooses)
 
 greet_text = "Приветствую, {name}, это бот для школ \n \nУдачного использования"
 menu_text = "Функции"
 set_date_text = "Выберите день недели"
+choose_how = "Выберите вид домашнего задания"
 set_hw_text = 'Впишите ваше домашнее задание'
 
 router = Router()
@@ -52,7 +55,12 @@ async def set_date(call: types.CallbackQuery):
 for i in yep:
     @router.callback_query(F.data == i)
     async def set_hw(call: types.CallbackQuery):
-        await call.message.answer(set_hw_text)
+        date1 = i
+        await call.message.answer(choose_how, reply_markup=)
+
+
+@router.callback_query(F.data == 'txt')
+
 
 
 @router.message(Command("start"))
