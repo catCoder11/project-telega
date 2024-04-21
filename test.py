@@ -1,62 +1,79 @@
-from telegram.ext import CommandHandler, Application
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
-from datetime import datetime as dt
-
-BOT_TOKEN = "7087953766:AAHZhEaNOHUwuVr-49sizlgdCG-i7LgZz3w"
-
-adm = False
-
-st = [['/start']]
-basic = [['/admin_on'], ['/add_homework', '/get_homework'], ['/close']]
-ad_com = [['add_homework', 'get_homework'], ['/admin_off']]
-markup = ReplyKeyboardMarkup(basic, one_time_keyboard=False)
-admin_commands = ReplyKeyboardMarkup(ad_com, one_time_keyboard=False)
-starts = ReplyKeyboardMarkup(st, one_time_keyboard=False)
+import asyncio
+import logging
+from aiogram import F, Router, types
+from aiogram.filters import Command
+from aiogram.types import Message
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram import Bot, Dispatcher
+from aiogram.enums.parse_mode import ParseMode
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.context import FSMContext
 
 
-async def admin_on(update, context):
-    await update.message.reply_text('вы вошли в режим админа',
-                                    reply_markup=admin_commands)
+def IKB(name, df):
+    return InlineKeyboardButton(text=name, callback_data=df)
 
 
-async def admin_off(update, context):
-    await update.message.reply_text('вы больше не админ',
-                                    reply_markup=markup)
+menus = [
+    [IKB("Добавить домашнее задание", "set_hw"),
+     IKB("Получить домашнее задание", "get_hw")],
+    [IKB("Расписание", "rasp")],
+    [IKB("Режим админа", "admin")]
+]
+
+dates = [
+    [IKB("Понедельник", "pn")],
+    [IKB("Вторник", "vt")],
+    [IKB("Среда", "sr")],
+    [IKB("Четверг", "ct")],
+    [IKB("Пятница", "pt")],
+    [IKB("Суббота", "sb")],
+    [IKB("Воскресение", "vs")],
+    [IKB('Следющая неделя', "next_week")]
+]
+
+yep = ["pn", "vt", "sr", "ct", "pt", "sb", "vs"]
+
+men = InlineKeyboardMarkup(inline_keyboard=menus)
+date = InlineKeyboardMarkup(inline_keyboard=dates)
+
+greet_text = "Приветствую, {name}, это бот для школ \n \nУдачного использования"
+menu_text = "Функции"
+set_date_text = "Выберите день недели"
+set_hw_text = 'Впишите ваше домашнее задание'
+
+router = Router()
 
 
-async def add_individual_hw(update, context):
-    await update.message.reply_text(
-        "тут пока ничего нет")
+@router.callback_query(F.data == 'set_hw')
+async def set_date(call: types.CallbackQuery):
+    await call.message.answer(set_date_text, reply_markup=date)
+
+for i in yep:
+    @router.callback_query(F.data == i)
+    async def set_hw(call: types.CallbackQuery):
+        await call.message.answer(set_hw_text)
 
 
-async def start(update, context):
-    await update.message.reply_text(
-        "работа начата",
-        reply_markup=markup
-    )
+@router.message(Command("start"))
+async def start_handler(msg: Message):
+    await msg.answer(greet_text.format(name=msg.from_user.full_name), reply_markup=men)
 
 
-async def get(update, context):
-    await update.message.reply_text('тут пока ничего нет')
+@router.message(F.text.lower() == "меню")
+@router.message(Command('menu'))
+async def menu(msg: Message):
+    await msg.answer(menu_text, reply_markup=men)
 
 
-async def close(update, context):
-    await update.message.reply_text(
-        "работа окончена",
-        reply_markup=starts
-    )
+async def main():
+    bot = Bot(token="7087953766:AAHZhEaNOHUwuVr-49sizlgdCG-i7LgZz3w", parse_mode=ParseMode.HTML)
+    dp = Dispatcher(storage=MemoryStorage())
+    dp.include_router(router)
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 
-def main():
-    application = Application.builder().token(BOT_TOKEN).build()
-    application.add_handler(CommandHandler("admin_off", admin_off))
-    application.add_handler(CommandHandler("admin_on", admin_on))
-    application.add_handler(CommandHandler("get_homework", get))
-    application.add_handler(CommandHandler('close', close))
-    application.add_handler(CommandHandler("add_homework", add_individual_hw))
-    application.add_handler(CommandHandler("start", start))
-    application.run_polling()
-
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(main())
