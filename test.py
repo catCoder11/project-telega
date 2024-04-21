@@ -9,41 +9,49 @@ from aiogram.enums.parse_mode import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 
-def IKB(name, df):
+def ikb(name, df):
     return InlineKeyboardButton(text=name, callback_data=df)
 
 
 menus = [
-    [IKB("Добавить домашнее задание", "set_hw"),
-     IKB("Получить домашнее задание", "get_hw")],
-    [IKB("Расписание", "rasp")],
-    [IKB("Режим админа", "admin")]
+    [ikb("Добавить домашнее задание", "set_hw"),
+     ikb("Получить домашнее задание", "get_hw")],
+    [ikb("Расписание", "rasp")],
+    [ikb("Режим админа", "admin")]
 ]
 
 dates = [
-    [IKB("Понедельник", "pn")],
-    [IKB("Вторник", "vt")],
-    [IKB("Среда", "sr")],
-    [IKB("Четверг", "ct")],
-    [IKB("Пятница", "pt")],
-    [IKB("Суббота", "sb")],
-    [IKB("Воскресение", "vs")],
-    [IKB('Следющая неделя', "next_week")]
+    [ikb("Понедельник", "pn")],
+    [ikb("Вторник", "vt")],
+    [ikb("Среда", "sr")],
+    [ikb("Четверг", "ct")],
+    [ikb("Пятница", "pt")],
+    [ikb("Суббота", "sb")],
+    [ikb("Воскресение", "vs")],
+    [ikb('Следющая неделя', "next_week")],
+    [ikb('Отмена', 'menu')]
 ]
 
-chooses = [[IKB('Текст', 'txt'), IKB("фото", "ft")]]
+chooses = [
+    [ikb('Текст', 'txt'), ikb("фото", "photo")],
+    [ikb('Отмена', 'menu')]
+]
+
+ends = [[ikb('Отмена', 'menu')]]
 
 yep = ["pn", "vt", "sr", "ct", "pt", "sb", "vs"]
 
 men = InlineKeyboardMarkup(inline_keyboard=menus)
 date = InlineKeyboardMarkup(inline_keyboard=dates)
 choose = InlineKeyboardMarkup(inline_keyboard=chooses)
+end = InlineKeyboardMarkup(inline_keyboard=ends)
 
 greet_text = "Приветствую, {name}, это бот для школ \n \nУдачного использования"
 menu_text = "Функции"
 set_date_text = "Выберите день недели"
 choose_how = "Выберите вид домашнего задания"
 set_hw_text = 'Впишите ваше домашнее задание'
+set_hw_photo = 'Вставте фото вашего домашнего задания'
 
 router = Router()
 
@@ -54,13 +62,19 @@ async def set_date(call: types.CallbackQuery):
 
 for i in yep:
     @router.callback_query(F.data == i)
-    async def set_hw(call: types.CallbackQuery):
-        date1 = i
-        await call.message.answer(choose_how, reply_markup=)
+    async def choose_hw(call: types.CallbackQuery):
+        day = i
+        await call.message.answer(choose_how, reply_markup=choose)
 
 
 @router.callback_query(F.data == 'txt')
+async def set_hw(call: types.CallbackQuery):
+    await call.message.answer(set_hw_text, reply_markup=end)
 
+
+@router.callback_query(F.data == 'photo')
+async def set_hw(call: types.CallbackQuery):
+    await call.message.answer(set_hw_photo, reply_markup=end)
 
 
 @router.message(Command("start"))
@@ -72,6 +86,11 @@ async def start_handler(msg: Message):
 @router.message(Command('menu'))
 async def menu(msg: Message):
     await msg.answer(menu_text, reply_markup=men)
+
+
+@router.callback_query(F.data == 'menu')
+async def menu(call: types.CallbackQuery):
+    await call.message.answer(menu_text, reply_markup=men)
 
 
 async def main():
