@@ -64,6 +64,8 @@ class K_klass(SqlAlchemyBase):
     corpus = orm.relationship("K_corpus", back_populates='klass')
     access = orm.relationship("Access", back_populates='klass')
     rasp = orm.relationship("Rasp", back_populates='klass')
+    teachers = orm.relationship("K_teacher", back_populates='klass')
+
 
 class K_subject(SqlAlchemyBase):
     __tablename__ = 'subjects'
@@ -83,6 +85,8 @@ class K_teacher(SqlAlchemyBase):
     modify_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                      default=datetime.datetime.now)
     creator = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    klass_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("klasses.id"), nullable=True)
+    klass = orm.relationship("K_klass")
     rasp = orm.relationship("Rasp", back_populates='teacher')
 
 
