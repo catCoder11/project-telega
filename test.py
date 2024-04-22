@@ -1,12 +1,22 @@
 import asyncio
 import logging
 from aiogram import F, Router, types
-from aiogram.filters import Command
+from aiogram.filters import Command, StateFilter
 from aiogram.types import Message
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram import Bot, Dispatcher
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import StatesGroup, State
+
+
+day = None
+
+
+class States(StatesGroup):
+    txt = State()
+    photo = State()
 
 
 def ikb(name, df):
@@ -39,7 +49,8 @@ chooses = [
 
 ends = [[ikb('Отмена', 'menu')]]
 
-yep = ["pn", "vt", "sr", "ct", "pt", "sb", "vs"]
+yep = {"pn": 'Понедельник', "vt": 'Вторник', "sr": 'Среда', "ct": 'Четверг',
+       "pt": 'Пятница', "sb": "Суббота", "vs": "Воскресенье"}
 
 men = InlineKeyboardMarkup(inline_keyboard=menus)
 date = InlineKeyboardMarkup(inline_keyboard=dates)
@@ -60,21 +71,39 @@ router = Router()
 async def set_date(call: types.CallbackQuery):
     await call.message.answer(set_date_text, reply_markup=date)
 
+
 for i in yep:
     @router.callback_query(F.data == i)
     async def choose_hw(call: types.CallbackQuery):
+        global day
         day = i
         await call.message.answer(choose_how, reply_markup=choose)
 
 
 @router.callback_query(F.data == 'txt')
-async def set_hw(call: types.CallbackQuery):
+async def set_hw(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer(set_hw_text, reply_markup=end)
+    await state.set_state(States.txt)
+
+
+@router.message(States.txt)
+async def text_hw(msg: Message):
+    await msg.answer(f'ваша домашняя работа на {yep[day]}: {msg.text}')
 
 
 @router.callback_query(F.data == 'photo')
-async def set_hw(call: types.CallbackQuery):
+async def set_hw(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer(set_hw_photo, reply_markup=end)
+    await state.set_state(States.photo)
+
+
+# @router.message(States.photo)
+# async def text_hw(msg: Message):
+#     id_photo = msg.photo[-1].file_id
+#     name_photo = msg.caption
+#     await msg.answer(f'ваша домашняя работа на {yep[day]}:')
+#   пока не работает, в будущем постараюсь реализовать
+#   стоит поторопиться
 
 
 @router.message(Command("start"))
