@@ -12,6 +12,7 @@ from aiogram.fsm.state import StatesGroup, State
 
 day = None
 work = None
+night = None
 
 
 class States(StatesGroup):
@@ -31,6 +32,13 @@ menus = [
     [ikb("Режим админа", "admin")]
 ]
 
+
+weeks = [
+    [ikb('Эта неделя', 'this_week'), ikb('Следющая неделя', "next_week")],
+         [ikb('Отмена', 'menu')]
+]
+
+
 dates = [
     [ikb("Понедельник", "pn")],
     [ikb("Вторник", "vt")],
@@ -39,7 +47,6 @@ dates = [
     [ikb("Пятница", "pt")],
     [ikb("Суббота", "sb")],
     [ikb("Воскресение", "vs")],
-    [ikb('Следющая неделя', "next_week")],
     [ikb('Отмена', 'menu')]
 ]
 
@@ -71,25 +78,43 @@ nope = {'alg': 'Алгебра', 'geom': 'Геометрия', 'phy': 'Физи�
         'geog': 'География', 'bio': 'Биология', 'PE': 'Физкультура', 'ob': 'ОБЖ', 'izo': 'ИЗО', 'tru': 'Труды',
         'mus': 'Музыка', 'rov': 'Разговоры о важном', 'mat': 'Математика'}
 
+died = {'this_week': 'этой неделе', 'next_week': 'следующей неделе'}
+
 men = InlineKeyboardMarkup(inline_keyboard=menus)
 date = InlineKeyboardMarkup(inline_keyboard=dates)
 choose = InlineKeyboardMarkup(inline_keyboard=chooses)
 end = InlineKeyboardMarkup(inline_keyboard=ends)
 lesson = InlineKeyboardMarkup(inline_keyboard=lessons)
+week = InlineKeyboardMarkup(inline_keyboard=weeks)
 
-greet_text = "Приветствую, {name}, это бот для школ \n \nУдачного использования"
+greet_text = "Приветствую, {name}, это бот для школ \nУдачного использования"
 menu_text = "Функции"
 set_date_text = "Выберите день недели"
 set_lesson_text = 'Выберите предмет'
 choose_how = "Выберите вид домашнего задания"
 set_hw_text = 'Впишите ваше домашнее задание'
 set_hw_photo = 'Вставте фото вашего домашнего задания'
+set_week_text = 'Выберите неделю'
 
 router = Router()
 
 
 @router.callback_query(F.data == 'set_hw')
+async def set_week(call: types.CallbackQuery):
+    await call.message.answer(set_week_text, reply_markup=week)
+
+
+@router.callback_query(F.data == 'this_week')
 async def set_date(call: types.CallbackQuery):
+    global night
+    night = 'this_week'
+    await call.message.answer(set_date_text, reply_markup=date)
+
+
+@router.callback_query(F.data == 'next_week')
+async def set_date(call: types.CallbackQuery):
+    global night
+    night = 'next_week'
     await call.message.answer(set_date_text, reply_markup=date)
 
 # -----------------------------DATES--------------------------------
@@ -288,7 +313,7 @@ async def set_hw(call: types.CallbackQuery, state: FSMContext):
 
 @router.message(States.txt)
 async def text_hw(msg: Message):
-    await msg.answer(f'ваша домашняя работа по {nope[work]} на {yep[day]}: {msg.text}')
+    await msg.answer(f'ваша домашняя работа по {nope[work]} на {yep[day]} на {died[night]}: {msg.text}')
 
 
 @router.callback_query(F.data == 'photo')
