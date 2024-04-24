@@ -15,6 +15,7 @@ class User(SqlAlchemyBase, UserMixin):
     hashed_password = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     created_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                      default=datetime.datetime.now)
+    current_class_id = sqlalchemy.Column(sqlalchemy.Integer)
     access = orm.relationship('Access', back_populates='user')
 
     def set_password(self, password):
