@@ -19,6 +19,7 @@ class States(StatesGroup):
     txt = State()
     photo = State()
     none = State()
+    next = State()
 
 
 def ikb(name, df):
@@ -28,16 +29,13 @@ def ikb(name, df):
 menus = [
     [ikb("Добавить домашнее задание", "set_hw"),
      ikb("Получить домашнее задание", "get_hw")],
-    [ikb("Расписание", "rasp")],
-    [ikb("Режим админа", "admin")]
+    [ikb("Расписание", "rasp")]
 ]
-
 
 weeks = [
     [ikb('Эта неделя', 'this_week'), ikb('Следющая неделя', "next_week")],
          [ikb('Отмена', 'menu')]
 ]
-
 
 dates = [
     [ikb("Понедельник", "pn")],
@@ -68,7 +66,10 @@ chooses = [
     [ikb('Отмена', 'menu')]
 ]
 
-ends = [[ikb('Отмена', 'menu')]]
+ends = [
+    [ikb('Отмена', 'menu')]
+]
+
 
 yep = {"pn": 'Понедельник', "vt": 'Вторник', "sr": 'Среда', "ct": 'Четверг',
        "pt": 'Пятница', "sb": "Суббота", "vs": "Воскресенье"}
@@ -78,8 +79,11 @@ nope = {'alg': 'Алгебра', 'geom': 'Геометрия', 'phy': 'Физи�
         'geog': 'География', 'bio': 'Биология', 'PE': 'Физкультура', 'ob': 'ОБЖ', 'izo': 'ИЗО', 'tru': 'Труды',
         'mus': 'Музыка', 'rov': 'Разговоры о важном', 'mat': 'Математика'}
 
-died = {'this_week': 'этой неделе', 'next_week': 'следующей неделе'}
+died = {
+    'this_week': 'этой неделе', 'next_week': 'следующей неделе'
+}
 
+#   ----------------------------IKBS--------------------------------
 men = InlineKeyboardMarkup(inline_keyboard=menus)
 date = InlineKeyboardMarkup(inline_keyboard=dates)
 choose = InlineKeyboardMarkup(inline_keyboard=chooses)
@@ -87,6 +91,7 @@ end = InlineKeyboardMarkup(inline_keyboard=ends)
 lesson = InlineKeyboardMarkup(inline_keyboard=lessons)
 week = InlineKeyboardMarkup(inline_keyboard=weeks)
 
+#   ---------------------------TEXTS-------------------------------
 greet_text = "Приветствую, {name}, это бот для школ \nУдачного использования"
 menu_text = "Функции"
 set_date_text = "Выберите день недели"
@@ -169,7 +174,7 @@ async def set_lesson(call: types.CallbackQuery):
     await call.message.answer(set_lesson_text, reply_markup=lesson)
 
 
-# -----------------------------LESSONS--------------------------------
+# ----------------------------LESSONS------------------------------
 
 
 @router.callback_query(F.data == 'alg')
@@ -312,8 +317,9 @@ async def set_hw(call: types.CallbackQuery, state: FSMContext):
 
 
 @router.message(States.txt)
-async def text_hw(msg: Message):
+async def text_hw(msg: Message, state: FSMContext):
     await msg.answer(f'ваша домашняя работа по {nope[work]} на {yep[day]} на {died[night]}: {msg.text}')
+    await state.set_state(States.none)
 
 
 @router.callback_query(F.data == 'photo')
@@ -322,13 +328,12 @@ async def set_hw(call: types.CallbackQuery, state: FSMContext):
     await state.set_state(States.photo)
 
 
-# @router.message(States.photo)
-# async def text_hw(msg: Message):
-#     id_photo = msg.photo[-1].file_id
-#     name_photo = msg.caption
-#     await msg.answer(f'ваша домашняя работа на {yep[day]}:')
-#   пока не работает, в будущем постараюсь реализовать
-#   стоит поторопиться
+@router.message(States.photo)
+async def photo_hw(msg: types.Message, bot: Bot, state: FSMContext):
+    if msg.photo:
+        file_name = f"{msg.photo[-1].file_id}.jpg"
+        await bot.download(msg.photo[-1], destination=file_name)
+        await state.set_state(States.none)
 
 
 @router.message(Command("start"))
@@ -338,6 +343,7 @@ async def start_handler(msg: Message):
 
 @router.message(F.text.lower() == "меню")
 @router.message(Command('menu'))
+@router.message(States.none)
 async def menu(msg: Message):
     await msg.answer(menu_text, reply_markup=men)
 
