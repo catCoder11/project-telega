@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+<form action="http://{{host}}:{{port}}/{{back}}"><button>Назад</button></form>
     <form action="" method="post">
         {{ form.hidden_tag() }}
         <p>
