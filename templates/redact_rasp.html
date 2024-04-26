@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+	<link rel="stylesheet" type="text/css" href="/static/css/style.css')}" />
+        <title>{{ title }}</title>
+    </head>
+<body>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+        <h2>{{form.teacher.label}}: {{form.teacher(choices="")}}</h2><br>
+        <h2>{{form.subject.label}}:  {{form.subject(choices="")}}</h2><br>
+        <h2>{{form.auditory.label}}:   {{form.auditory(choices="")}}</h2><br>
+        <h2>{{form.time.label}}:    {{form.time()}}</h2><br>
+        </p>
+        {{err}}
+        {% for error in form.time.errors %}
+            <p class="alert alert-danger" role="alert">{{ error }}</p>
+            {% endfor %}
+        <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+    {{message}}
+</form>
+    </body>
+</html>

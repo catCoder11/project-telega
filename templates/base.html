@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+	<link rel="stylesheet" type="text/css" href="/static/css/style.css')}" />
+        <title>{{ title }}</title>
+    </head>
+    <body>
+	<nav>
+		{% if current_user.is_authenticated %}
+    		<a class="navbar-brand" href="/logout">{{ current_user.name }}</a>
+		{% else %}
+    			<p>
+        			<a class="btn btn-primary " href="/register">Зарегистрироваться</a>
+        			<a class="btn btn-success" href="/login">Войти</a>
+   		 	</p>
+		{% endif %}
+	</nav>
+        <h1>My Rasp Online</h1>
+	<h4>Расписание всегда под рукой!</h4>
+	{% block content %}
+	{% endblock %}
+    </body>
+</html>
