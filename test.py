@@ -18,7 +18,7 @@ import datetime
 day = None
 work = None
 night = None
-admin = True
+admin = False
 hw_id = 2
 
 db_session.global_init("db/school_rasp.db")
