@@ -6,6 +6,7 @@
         <title>{{ title }}</title>
     </head>
 <body>
+    <form action="http://{{host}}:{{port}}/redact_day/{{week_day}}"><button>Назад</button></form>
     <form action="" method="post">
         {{ form.hidden_tag() }}
         <p>
