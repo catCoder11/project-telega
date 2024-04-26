@@ -25,6 +25,8 @@ class RaspForm(FlaskForm):
     redact_teachers = SubmitField('Учителя')
     redact_corpuses = SubmitField('Корпуса')
     redact_auditories = SubmitField('Ауидитории')
+    redact_days = SubmitField('Редактировать расписание')
+    choose_button = SubmitField('Выбрать класс')
 
 class ObjectTableForm(FlaskForm):
     id = TextAreaField()
