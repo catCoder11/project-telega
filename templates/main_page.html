@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Привет, {{ current_user.name }}</h1>
+<form action="" method="post">
+    <table id="myTable" class="display">
+    <thead>
+        <tr>
+            <th>ID</th>
+			<th>Предмет</th>
+            <th>Преподаватель</th>
+			<th>Корпус</th>
+			<th>Аудитория</th>
+            <th>Время</th>
+        </tr>
+    </thead>
+    <tbody>
+        <div class="col-md6 border rounded">
+        {% for day in full_rasp.keys() %}
+            {% if full_rasp[day]%}
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td><h1>{{day}}</h1></td>
+                </tr>
+            {% endif %}
+            {% for item in full_rasp[day] %}
+            <tr>
+                <td><h2 align="center">{{item.id}}</h2></td>
+                <td><h2 align="center">{{item.subject.name}}</h2></td>
+                <td><h2 align="center">{{item.teacher.fio}}</h2></td>
+                <td><h2 align="center">{{item.auditory.corpus.name}}</h2></td>
+                <td><h2 align="center">{{item.auditory.name}}</h2></td>
+                <td><h2 align="center">{{item.start_time.time().hour}}:{{item.start_time.time().minute}}</h2></td>
+                <td><form action="http://{{host}}:{{port}}/redact_rasp/{{week_day}}/{{item.id}}">
+                <h2><button><img src="/static/img/pen.png"
+                                 alt="здесь должна была быть картинка"></button></h2></form></td>
+            </tr>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </tbody>
+</table>
+    {% for day in full_rasp.keys() %}
+        <div>
+            {% for rasp_el in day %}
+
+            {% endfor %}
+        </div>
+    {% endfor %}
+</form>
+<form action="" method="post">
+    {{ form.hidden_tag() }}
+
+    <p>{{form.create_class(type="submit", class="btn btn-primary")}}</p>
+    <p>{{form.add_class(type="submit", class="btn btn-primary")}}</p>
+    {% if check%}
+        <p>{{form.redact_teachers(type="submit", class="btn btn-primary")}}</p>
+        <p>{{form.redact_corpuses(type="submit", class="btn btn-primary")}}</p>
+        <p>{{form.redact_auditories(type="submit", class="btn btn-primary")}}</p>
+    {% endif %}
+    <p></p>
+</form>
+{% endblock %}

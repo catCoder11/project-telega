@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+	<link rel="stylesheet" type="text/css" href="/static/css/style.css')}" />
+        <title>{{ title }}</title>
+    </head>
+<body>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        {% if form.id != "0" %}
+        <p>
+            ID
+            {{ form.id }}
+        </p>
+        {% endif %}
+
+        <p>
+            Код:<br>
+            {{ form.name(class="form-control") }}<br>
+            {% for error in form.name.errors %}
+            <p class="alert alert-danger" role="alert">{{ error }}</p>
+            {% endfor %}
+        </p>
+    <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+    {{message}}
+</form>
+    </body>
+</html>
+

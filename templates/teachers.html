@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+	<link rel="stylesheet" type="text/css" href="/static/css/style.css')}" />
+    </head>
+<body>
+<form action="http://{{host}}:{{port}}/"><button>Назад</button></form>
+<p>
+<table id="myTable" class="display">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Преподаватель</th>
+        </tr>
+    </thead>
+    <tbody>
+        <div class="col-md6 border rounded">
+        {% for item in form%}
+            <tr>
+            <td><h2>{{item.id}}</h2></td>
+            <td><h2>{{item.fio}}</h2></td>
+            <td><form action="http://{{host}}:{{port}}/redact_teachers/{{item.id}}">
+                <h2><button><img src="/static/img/pen.png"
+                                 alt="здесь должна была быть картинка"></button></h2></form>
+            </td>
+            </tr>
+        </div>
+        {% endfor %}
+    </tbody>
+</table>
+<form action="http://{{host}}:{{port}}/redact_teachers/0">
+    <h1><button>Добавить</button></h1></form>
+</body>
+</html>

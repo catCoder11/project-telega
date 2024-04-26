@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.klass.label }}<br>
+            {{ form.klass() }}<br>
+            {% for error in form.klass.errors %}
+            <p class="alert alert-danger" role="alert">{{ error }}</p>
+            {% endfor %}
+        </p>
+    <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
+    {{message}}
+</form>
+{% endblock %}
