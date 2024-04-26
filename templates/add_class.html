@@ -6,6 +6,7 @@
         <title>{{ title }}</title>
     </head>
 <body>
+    <form action="http://{{host}}:{{port}}/{{back}}"><button>Назад</button></form>
     <form action="" method="post">
         {{ form.hidden_tag() }}
         {% if form.id != "0" %}
@@ -22,6 +23,7 @@
             <p class="alert alert-danger" role="alert">{{ error }}</p>
             {% endfor %}
         </p>
+        {{code_error}}
     <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
     {{message}}
 </form>
