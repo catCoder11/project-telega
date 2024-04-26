@@ -12,6 +12,7 @@ from data.rasp import Rasp
 from flask_login import login_user, logout_user, login_required, current_user, LoginManager
 import os
 
+
 def get_me_back():
     try:
         x = current_user.telegram_id
@@ -53,6 +54,17 @@ def main():
             subject.creator = "KotyaPool"
             db_sess.add(subject)
         db_sess.commit()
+        tsk = K_task_type()
+        tsk.id = 1
+        tsk.name = 'Общая'
+        tsk.creator = 'Просто Олег'
+        db_sess.add(tsk)
+        tsk = K_task_type()
+        tsk.id = 2
+        tsk.name = 'Индивидуальная'
+        tsk.creator = 'Просто Олег'
+        db_sess.add(tsk)
+        db_sess.commit()
     else:
         db_session.global_init("db/school_rasp.db")
     app.run(port=PORT, host=HOST)
@@ -72,25 +84,23 @@ login_manager.init_app(app)
 def main_page():
     if not current_user.is_authenticated:
         return redirect('/register')
-    date = get_date("0")
+    #date = get_date("0", reverse=True)
     db_sess = db_session.create_session()
     current_class = session.get("klass", 0)
     check = db_sess.query(Access).filter(Access.telegram_id == current_user.telegram_id).first()
     if not current_class and bool(check):
         return redirect("/choose_class")
-    full_rasp = {"понедельник": "", "вторник": "", "среда": "", "пятница": "", "суббота": "", "воскресенье": ""}
+    full_rasp = {"понедельник": [], "вторник": [], "среда": [], "четверг": [],
+                 "пятница": [], "суббота": [], "воскресенье": []}
     i = 0
     rasp_subj = db_sess.query(Rasp).filter(Rasp.klass_id == current_class).all()
     for key in full_rasp.keys():
         full_rasp[key] = sorted([el for el in rasp_subj if el.start_time.date().weekday() == i],
                                 key=lambda x: x.start_time)
         i += 1
-    if db_sess.query(Access).filter(Access.klass_id == current_class,
-                                    Access.telegram_id == current_user.telegram_id,
-                                    Access.access_type_id==3).first():
-        check=True
-    else:
-        check=False
+    check = db_sess.query(Access).filter(Access.klass_id == current_class,
+                                Access.telegram_id == current_user.telegram_id,
+                                Access.access_type_id==3).first()
     form = RaspForm()
     if form.validate_on_submit():
         if form.create_class.data:
@@ -103,6 +113,10 @@ def main_page():
             return redirect("/auditories")
         elif form.redact_corpuses.data:
             return redirect("/corpuses")
+        elif form.redact_days.data:
+            return redirect("/days")
+        elif form.choose_button.data:
+            return redirect("/choose_class")
     return render_template('main_page.html', title='Расписание', form=form, full_rasp=full_rasp,
                            check=check, current_user=current_user)
 
@@ -118,7 +132,7 @@ def choose():
         return redirect('/')
     filt = db_sess.query(Access).filter(Access.telegram_id == current_user.telegram_id).all()
     form.klass.choices = ["ID " + str(el.klass.id) + " :" + el.klass.name for el in filt]
-    return render_template("choose_class.html", form=form)
+    return render_template("choose_class.html", form=form, host=HOST, port=PORT)
 
 @app.route('/teachers', methods=['GET', 'POST'])
 def teachers():
@@ -288,8 +302,8 @@ def logout():
 
 @app.route('/create_class', methods=['GET', 'POST'])
 def create_class():
-    if get_me_back():
-        return redirect("/")
+    if not current_user.is_authenticated:
+        return redirect('/register')
     db_sess = db_session.create_session()
     form = RedactForm()
     form.id = "0"
@@ -308,20 +322,21 @@ def create_class():
         db_sess.commit()
         return redirect("/")
     return render_template('redact.html', title='Создать класс', form=form, current_user=current_user,
-                           w_name="")
+                           w_name="", port=PORT, host=HOST)
 
 
 @app.route('/add_class', methods=['GET', 'POST'])
 def add_class():
-    if get_me_back():
-        return redirect("/")
+    if not current_user.is_authenticated:
+        return redirect('/register')
     form = RedactForm()
     code_error = ""
     if form.validate_on_submit():
         db_sess = db_session.create_session()
         check = db_sess.query(K_klass).filter(K_klass.class_key == form.name.data).first()
         if check:
-            if not db_sess.query(Access).filter(Access.telegram_id == current_user.telegram_id).all():
+            if not db_sess.query(Access).filter(Access.telegram_id == current_user.telegram_id,
+                                                Access.klass_id == check.id).all():
                 access = Access()
                 current_user.current_class_id = check.id
                 access_type = db_sess.query(K_access_type).filter(K_access_type.id == 1).first()
@@ -331,12 +346,13 @@ def add_class():
                 user.access.append(access)
                 db_sess.add(access)
                 db_sess.commit()
+                return redirect("/")
+            else:
+                code_error = "Вы уже состоите в этом классе"
         else:
             code_error = "Неверный ключ"
-    else:
-        code_error = "Вы уже состоите в этом классе"
     return render_template('add_class.html', title='Войти в класс', form=form, current_user=current_user,
-                           code_error=code_error)
+                           code_error=code_error, host=HOST, port=PORT)
 
 @app.route('/days', methods=['GET', 'POST'])
 def days():
@@ -378,7 +394,7 @@ def redact_rasp(id, week_day):
     error = ""
     if form.submit and not (form.auditory.data and form.teacher.data and form.subject.data):
         error = "Нет нужных данных. Добавьте их и вернитесь\n"
-        return render_template("redact_rasp.html", form=form, err=error)
+        return render_template("redact_rasp.html", form=form, err=error, host=HOST, port=PORT, week_day=week_day)
     if form.validate_on_submit():
         rasp.auditory = db_sess.query(K_auditory).filter(K_auditory.id == form.auditory.data).first()
         rasp.teacher = db_sess.query(K_teacher).filter(K_teacher.id == form.teacher.data).first()
@@ -391,7 +407,7 @@ def redact_rasp(id, week_day):
             db_sess.add(rasp)
         db_sess.commit()
         return redirect("/redact_day/" + week_day)
-    return render_template("redact_rasp.html", form=form, error=error)
+    return render_template("redact_rasp.html", form=form, error=error, host=HOST, port=PORT, week_day=week_day)
 
 
 if __name__ == '__main__':
