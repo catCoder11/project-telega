@@ -2,17 +2,30 @@ import asyncio
 import logging
 from aiogram import F, Router, types
 from aiogram.filters import Command, StateFilter
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram import Bot, Dispatcher
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
+from data.tasks import Tasks
+from data import db_session
+from data.k_tables import *
+from data.rasp import *
+import datetime
 
 day = None
 work = None
 night = None
+admin = False
+hw_id = 2
+
+db_session.global_init("db/school_rasp.db")
+
+
+async def check_login():
+    pass
 
 
 class States(StatesGroup):
@@ -32,9 +45,20 @@ menus = [
     [ikb("Расписание", "rasp")]
 ]
 
+ads = [
+    [ikb("Добавить домашнее задание", "set_hw_admin"),
+     ikb("Получить домашнее задание", "get_hw")],
+    [ikb("Расписание", "rasp")]
+]
+
+hw_types = [
+    [ikb('Индивидуальная', 'ind'), ikb('Общая', 'obs')],
+    [ikb('Отмена', 'menu')]
+]
+
 weeks = [
     [ikb('Эта неделя', 'this_week'), ikb('Следющая неделя', "next_week")],
-         [ikb('Отмена', 'menu')]
+    [ikb('Отмена', 'menu')]
 ]
 
 dates = [
@@ -70,18 +94,14 @@ ends = [
     [ikb('Отмена', 'menu')]
 ]
 
-
-yep = {"pn": 'Понедельник', "vt": 'Вторник', "sr": 'Среда', "ct": 'Четверг',
-       "pt": 'Пятница', "sb": "Суббота", "vs": "Воскресенье"}
+yep = [
+    'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресение'
+]
 
 nope = {'alg': 'Алгебра', 'geom': 'Геометрия', 'phy': 'Физика', 'che': 'Химия', 'IT': 'Информатика',
         'eng': 'Иностранный язык', 'rus': 'Русский', 'lit': 'Литература', 'his': 'История', 'cit': 'Обществознание',
         'geog': 'География', 'bio': 'Биология', 'PE': 'Физкультура', 'ob': 'ОБЖ', 'izo': 'ИЗО', 'tru': 'Труды',
         'mus': 'Музыка', 'rov': 'Разговоры о важном', 'mat': 'Математика'}
-
-died = {
-    'this_week': 'этой неделе', 'next_week': 'следующей неделе'
-}
 
 #   ----------------------------IKBS--------------------------------
 men = InlineKeyboardMarkup(inline_keyboard=menus)
@@ -90,6 +110,8 @@ choose = InlineKeyboardMarkup(inline_keyboard=chooses)
 end = InlineKeyboardMarkup(inline_keyboard=ends)
 lesson = InlineKeyboardMarkup(inline_keyboard=lessons)
 week = InlineKeyboardMarkup(inline_keyboard=weeks)
+ad = InlineKeyboardMarkup(inline_keyboard=ads)
+hw_type = InlineKeyboardMarkup(inline_keyboard=hw_types)
 
 #   ---------------------------TEXTS-------------------------------
 greet_text = "Приветствую, {name}, это бот для школ \nУдачного использования"
@@ -100,8 +122,55 @@ choose_how = "Выберите вид домашнего задания"
 set_hw_text = 'Впишите ваше домашнее задание'
 set_hw_photo = 'Вставте фото вашего домашнего задания'
 set_week_text = 'Выберите неделю'
+another_text = 'Эта дата уже прошла'
+added_text = 'Ваша домашняя работа добавлена'
+hw_admin_text = 'Выберите тип домашней работы'
 
 router = Router()
+
+
+@router.callback_query(F.data == 'set_hw_admin')
+async def set_hw_admin(call: types.CallbackQuery):
+    await call.message.answer(hw_admin_text, reply_markup=hw_type)
+
+
+@router.callback_query(F.data == 'obs')
+async def set_week(call: types.CallbackQuery):
+    global hw_id
+    hw_id = 1
+    await call.message.answer(set_week_text, reply_markup=week)
+
+
+@router.callback_query(F.data == 'ind')
+async def set_week(call: types.CallbackQuery):
+    global hw_id
+    hw_id = 2
+    await call.message.answer(set_week_text, reply_markup=week)
+
+
+@router.callback_query(F.data == 'get_hw')
+async def get_hw(call: types.CallbackQuery, bot: Bot):
+    db_sess = db_session.create_session()
+    await call.message.answer('Общая:')
+    for db in db_sess.query(Tasks).filter(Tasks.task_type_id == 1).all():
+        if '.jpg' in db.descriptions:
+            pht = FSInputFile(f'{db.descriptions}')
+            await bot.send_photo(chat_id=call.message.chat.id, photo=pht)
+        else:
+            await call.message.answer(db.descriptions)
+    # await call.message.answer("Индивидуальная:")
+    # for db in db_sess.query(Tasks).filter(Tasks.task_type_id == 2).all():
+    #     if db.creator == :
+    #         if '.jpg' in db.descriptions:
+    #             pht = FSInputFile(f'{db.descriptions}')
+    #             await bot.send_photo(chat_id=call.message.chat.id, photo=pht)
+    #         else:
+    #             await call.message.answer(db.descriptions)
+
+
+@router.callback_query(F.data == 'rasp')
+async def rasp(call: types.CallbackQuery):
+    await call.message.answer('тут пока ничего нет')
 
 
 @router.callback_query(F.data == 'set_hw')
@@ -112,15 +181,16 @@ async def set_week(call: types.CallbackQuery):
 @router.callback_query(F.data == 'this_week')
 async def set_date(call: types.CallbackQuery):
     global night
-    night = 'this_week'
+    night = False
     await call.message.answer(set_date_text, reply_markup=date)
 
 
 @router.callback_query(F.data == 'next_week')
 async def set_date(call: types.CallbackQuery):
     global night
-    night = 'next_week'
+    night = True
     await call.message.answer(set_date_text, reply_markup=date)
+
 
 # -----------------------------DATES--------------------------------
 
@@ -128,50 +198,78 @@ async def set_date(call: types.CallbackQuery):
 @router.callback_query(F.data == 'pn')
 async def set_lesson(call: types.CallbackQuery):
     global day
-    day = 'pn'
-    await call.message.answer(set_lesson_text, reply_markup=lesson)
+    now = datetime.datetime.today()
+    day = 0
+    if now.weekday() > day and not night:
+        await call.message.answer(another_text, reply_markup=date)
+    else:
+        await call.message.answer(set_lesson_text, reply_markup=lesson)
 
 
 @router.callback_query(F.data == 'vt')
 async def set_lesson(call: types.CallbackQuery):
     global day
-    day = 'vt'
-    await call.message.answer(set_lesson_text, reply_markup=lesson)
+    now = datetime.datetime.today()
+    day = 1
+    if now.weekday() > day and not night:
+        await call.message.answer(another_text, reply_markup=date)
+    else:
+        await call.message.answer(set_lesson_text, reply_markup=lesson)
 
 
 @router.callback_query(F.data == 'sr')
 async def set_lesson(call: types.CallbackQuery):
     global day
-    day = 'sr'
-    await call.message.answer(set_lesson_text, reply_markup=lesson)
+    now = datetime.datetime.today()
+    day = 2
+    if now.weekday() > day and not night:
+        await call.message.answer(another_text, reply_markup=date)
+    else:
+        await call.message.answer(set_lesson_text, reply_markup=lesson)
 
 
 @router.callback_query(F.data == 'ct')
 async def set_lesson(call: types.CallbackQuery):
     global day
-    day = 'ct'
-    await call.message.answer(set_lesson_text, reply_markup=lesson)
+    now = datetime.datetime.today()
+    day = 3
+    if now.weekday() > day and not night:
+        await call.message.answer(another_text, reply_markup=date)
+    else:
+        await call.message.answer(set_lesson_text, reply_markup=lesson)
 
 
 @router.callback_query(F.data == 'pt')
 async def set_lesson(call: types.CallbackQuery):
     global day
-    day = 'pt'
-    await call.message.answer(set_lesson_text, reply_markup=lesson)
+    now = datetime.datetime.today()
+    day = 4
+    if now.weekday() > day and not night:
+        await call.message.answer(another_text, reply_markup=date)
+    else:
+        await call.message.answer(set_lesson_text, reply_markup=lesson)
 
 
 @router.callback_query(F.data == 'sb')
 async def set_lesson(call: types.CallbackQuery):
     global day
-    day = 'sb'
-    await call.message.answer(set_lesson_text, reply_markup=lesson)
+    now = datetime.datetime.today()
+    day = 5
+    if now.weekday() > day and not night:
+        await call.message.answer(another_text, reply_markup=date)
+    else:
+        await call.message.answer(set_lesson_text, reply_markup=lesson)
 
 
 @router.callback_query(F.data == 'vs')
 async def set_lesson(call: types.CallbackQuery):
     global day
-    day = 'vs'
-    await call.message.answer(set_lesson_text, reply_markup=lesson)
+    now = datetime.datetime.today()
+    day = 6
+    if now.weekday() > day and not night:
+        await call.message.answer(another_text, reply_markup=date)
+    else:
+        await call.message.answer(set_lesson_text, reply_markup=lesson)
 
 
 # ----------------------------LESSONS------------------------------
@@ -318,7 +416,31 @@ async def set_hw(call: types.CallbackQuery, state: FSMContext):
 
 @router.message(States.txt)
 async def text_hw(msg: Message, state: FSMContext):
-    await msg.answer(f'ваша домашняя работа по {nope[work]} на {yep[day]} на {died[night]}: {msg.text}')
+    now = datetime.datetime.now().date()
+    rev = False
+    if night:
+        now += datetime.timedelta(days=7)
+    while now.weekday() != day:
+        if rev:
+            now -= datetime.timedelta(days=1)
+        else:
+            now += datetime.timedelta(days=1)
+        if now.weekday() != day and now.weekday() == 6:
+            rev = True
+    db_sess = db_session.create_session()
+    task = Tasks()
+    task.descriptions = f'{msg.text}'
+    task.creator = f"{msg.from_user.full_name}"
+    task_type = db_sess.query(K_task_type).filter(K_task_type.id == hw_id).first()
+    # ids = db_sess.query(K_subject).filter(K_subject.name == nope[work]).first()
+    # rasp_type = db_sess.query(Rasp).filter(Rasp.subject_id == ids.id).first()
+    # rasp_type.task.append(task)
+    task_type.task.append(task)
+    db_sess.commit()
+    if admin:
+        await msg.answer(added_text, reply_markup=ad)
+    else:
+        await msg.answer(added_text, reply_markup=men)
     await state.set_state(States.none)
 
 
@@ -331,26 +453,60 @@ async def set_hw(call: types.CallbackQuery, state: FSMContext):
 @router.message(States.photo)
 async def photo_hw(msg: types.Message, bot: Bot, state: FSMContext):
     if msg.photo:
-        file_name = f"{msg.photo[-1].file_id}.jpg"
+        now = datetime.datetime.now().date()
+        rev = False
+        if night:
+            now += datetime.timedelta(days=7)
+        while now.weekday() != day:
+            if rev:
+                now -= datetime.timedelta(days=1)
+            else:
+                now += datetime.timedelta(days=1)
+            if now.weekday() != day and now.weekday() == 6:
+                rev = True
+        file_name = f"photos/{msg.photo[-1].file_id}.jpg"
         await bot.download(msg.photo[-1], destination=file_name)
+        db_sess = db_session.create_session()
+        task = Tasks()
+        task.descriptions = f'{file_name}'
+        task.creator = f"{msg.from_user.id}"
+        task_type = db_sess.query(K_task_type).filter(K_task_type.id == hw_id).first()
+        # ids = db_sess.query(K_subject).filter(K_subject.name == nope[work]).first()
+        # rasp_type = db_sess.query(Rasp).filter(Rasp.subject_id == ids.id).first()
+        # rasp_type.task.append(task)
+        task_type.task.append(task)
+        db_sess.commit()
+        if admin:
+            await msg.answer(added_text, reply_markup=ad)
+        else:
+            await msg.answer(added_text, reply_markup=men)
         await state.set_state(States.none)
 
 
 @router.message(Command("start"))
 async def start_handler(msg: Message):
-    await msg.answer(greet_text.format(name=msg.from_user.full_name), reply_markup=men)
+    if admin:
+        await msg.answer(greet_text.format(name=msg.from_user.full_name), reply_markup=ad)
+    else:
+        await msg.answer(greet_text.format(name=msg.from_user.full_name), reply_markup=men)
 
 
 @router.message(F.text.lower() == "меню")
 @router.message(Command('menu'))
 @router.message(States.none)
 async def menu(msg: Message):
-    await msg.answer(menu_text, reply_markup=men)
+    if admin:
+        await msg.answer(menu_text, reply_markup=ad)
+    else:
+        await msg.answer(menu_text, reply_markup=men)
 
 
 @router.callback_query(F.data == 'menu')
 async def menu(call: types.CallbackQuery):
-    await call.message.answer(menu_text, reply_markup=men)
+    if admin:
+        await call.message.answer(menu_text, reply_markup=ad)
+    else:
+        await call.message.answer(menu_text, reply_markup=men)
 
 
 async def main():
