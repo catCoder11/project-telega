@@ -20,6 +20,7 @@ work = None
 night = None
 admin = False
 hw_id = 2
+nothing = True
 
 db_session.global_init("db/school_rasp.db")
 
