@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
+<form action="http://{{host}}:{{port}}"><h2><button>Назад</button></h2></form>
     <h1>
-    {% for item in form %}
-        <form action="http://{{host}}:{{port}}/redact_day/{{item[0]}}"><button>{{item[1]}}</button></form>
-    {% endfor %}
+        {% for item in form %}
+            <form action="http://{{host}}:{{port}}/redact_day/{{item[0]}}"><button>{{item[1]}}</button></form>
+        {% endfor %}
     </h1>
 {% endblock %}
