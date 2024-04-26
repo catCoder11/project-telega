@@ -6,6 +6,7 @@
         <title>{{ title }}</title>
     </head>
 <body>
+    <form action="http://{{host}}:{{port}}"><button>Назад</button></form>
     <form action="" method="post">
         {{ form.hidden_tag() }}
         {% if form.id != "0" %}
