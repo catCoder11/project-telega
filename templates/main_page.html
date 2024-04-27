@@ -3,18 +3,19 @@
 {% block content %}
 <h1>Привет, {{ current_user.name }}</h1>
 {% if check%}
-    <h2>Код класса: {{check.klass.class_key}}</h2>
+<div class="alert alert-primary" role="alert"><h2>Код класса: {{check.klass.class_key}}</h2></div>
 {% endif %}
 <form action="" method="post">
+    <div class="grid text-center">
     <table id="myTable" class="display">
     <thead>
         <tr>
-            <th>ID</th>
-			<th>Предмет</th>
-            <th>Преподаватель</th>
-			<th>Корпус</th>
-			<th>Аудитория</th>
-            <th>Время</th>
+            <div class="g-col-6"><th>ID</th></div>
+            <div class="g-col-6"><th>Предмет</th></div>
+            <div class="g-col-6"><th>Преподаватель</th></div>
+            <div class="g-col-6"><th>Корпус</th></div>
+            <div class="g-col-6"><th>Аудитория</th></div>
+            <div class="g-col-6"><th>Время</th></div>
         </tr>
     </thead>
     <tbody>
@@ -28,13 +29,13 @@
                 </tr>
             {% for item in full_rasp[day] %}
             <tr>
-                <td><h2 align="center">{{item.id}}</h2></td>
-                <td><h2 align="center">{{item.subject.name}}</h2></td>
-                <td><h2 align="center">{{item.teacher.fio}}</h2></td>
-                <td><h2 align="center">{{item.auditory.corpus.name}}</h2></td>
-                <td><h2 align="center">{{item.auditory.name}}</h2></td>
-                <td><h2 align="center">{{item.start_time.time().hour}}:{{item.start_time.time().minute}}</h2></td>
-                <td><form action="http://{{host}}:{{port}}/redact_rasp/{{week_day}}/{{item.id}}">
+                <div class="--bs-table-hover-bg:#e5c7ca"><td><h2 align="center">{{item.id}}</h2></td></div>
+                <div class="--bs-table-active-bg:#cbccce"><td><h2 align="center">{{item.subject.name}}</h2></td></div>
+                <div class="--bs-table-active-bg:#cbccce"><td><h2 align="center">{{item.teacher.fio}}</h2></td></div>
+                <div class="--bs-table-active-bg:#cbccce"><td><h2 align="center">{{item.auditory.corpus.name}}</h2></td></div>
+                <div class="--bs-table-active-bg:#cbccce"><td><h2 align="center">{{item.auditory.name}}</h2></td></div>
+                <div class="--bs-table-active-bg:#cbccce"><td><h2 align="center">{{item.start_time.time().hour}}:{{item.start_time.time().minute}}</h2></td></div>
+                <div class="--bs-table-active-bg:#cbccce"><td><form action="http://{{host}}:{{port}}/redact_rasp/{{week_day}}/{{item.id}}"></div>
             </tr>
             {% endfor %}
             {% endif %}

@@ -12,20 +12,13 @@ from aiogram.fsm.state import StatesGroup, State
 from data.tasks import Tasks
 from data import db_session
 from data.k_tables import *
+from data.access import *
 from data.rasp import *
+from data.users import *
 import datetime
 
-day = None
-work = None
-night = None
-admin = False
-hw_id = 2
 
-db_session.global_init("db/school_rasp.db")
-
-
-async def check_login():
-    pass
+router = Router()
 
 
 class States(StatesGroup):
@@ -33,22 +26,30 @@ class States(StatesGroup):
     photo = State()
     none = State()
     next = State()
+    true = State()
 
 
 def ikb(name, df):
     return InlineKeyboardButton(text=name, callback_data=df)
 
 
+day = None
+work = None
+night = None
+admin = True
+hw_id = 2
+
+db_session.global_init("db/school_rasp.db")
+
+
 menus = [
     [ikb("Добавить домашнее задание", "set_hw"),
-     ikb("Получить домашнее задание", "get_hw")],
-    [ikb("Расписание", "rasp")]
+     ikb("Получить домашнее задание", "get_hw")]
 ]
 
 ads = [
     [ikb("Добавить домашнее задание", "set_hw_admin"),
-     ikb("Получить домашнее задание", "get_hw")],
-    [ikb("Расписание", "rasp")]
+     ikb("Получить домашнее задание", "get_hw")]
 ]
 
 hw_types = [
@@ -126,8 +127,6 @@ another_text = 'Эта дата уже прошла'
 added_text = 'Ваша домашняя работа добавлена'
 hw_admin_text = 'Выберите тип домашней работы'
 
-router = Router()
-
 
 @router.callback_query(F.data == 'set_hw_admin')
 async def set_hw_admin(call: types.CallbackQuery):
@@ -151,21 +150,31 @@ async def set_week(call: types.CallbackQuery):
 @router.callback_query(F.data == 'get_hw')
 async def get_hw(call: types.CallbackQuery, bot: Bot):
     db_sess = db_session.create_session()
-    await call.message.answer('Общая:')
-    for db in db_sess.query(Tasks).filter(Tasks.task_type_id == 1).all():
-        if '.jpg' in db.descriptions:
+    await call.message.answer('-----------------Общая-----------------')
+    klass_id = db_sess.query(User).filter(User.telegram_id == call.from_user.username).first().current_class_id
+    rasps = [el.id for el in db_sess.query(Rasp).filter(Rasp.klass_id == klass_id).all()]
+    for db in db_sess.query(Tasks).filter(Tasks.task_type_id == 1, Tasks.rasp_id.in_(rasps)).all():
+        subj = db.rasp.subject.name
+        if db.descriptions[-4:] == '.jpg':
             pht = FSInputFile(f'{db.descriptions}')
+            await call.message.answer(f"{subj}:")
             await bot.send_photo(chat_id=call.message.chat.id, photo=pht)
         else:
-            await call.message.answer(db.descriptions)
-    # await call.message.answer("Индивидуальная:")
-    # for db in db_sess.query(Tasks).filter(Tasks.task_type_id == 2).all():
-    #     if db.creator == :
-    #         if '.jpg' in db.descriptions:
-    #             pht = FSInputFile(f'{db.descriptions}')
-    #             await bot.send_photo(chat_id=call.message.chat.id, photo=pht)
-    #         else:
-    #             await call.message.answer(db.descriptions)
+            await call.message.answer(subj, ": ", db.descriptions)
+    await call.message.answer("------------Индивидуальная------------")
+    for db in db_sess.query(Tasks).filter(Tasks.task_type_id == 2, Tasks.rasp_id.in_(rasps)).all():
+        if db.creator == str(call.from_user.username):
+            subj = db.rasp.subject.name
+            if '.jpg' in db.descriptions:
+                pht = FSInputFile(f'{db.descriptions}')
+                await call.message.answer(f"{subj}:")
+                await bot.send_photo(chat_id=call.message.chat.id, photo=pht)
+            else:
+                await call.message.answer(subj + ": " + db.descriptions)
+    if admin:
+        await call.message.answer('Ну всё', reply_markup=ad)
+    else:
+        await call.message.answer('Ну всё', reply_markup=men)
 
 
 @router.callback_query(F.data == 'rasp')
@@ -429,12 +438,16 @@ async def text_hw(msg: Message, state: FSMContext):
             rev = True
     db_sess = db_session.create_session()
     task = Tasks()
-    task.descriptions = f'{msg.text}'
-    task.creator = f"{msg.from_user.full_name}"
+    klass_id = db_sess.query(User).filter(User.telegram_id == msg.from_user.username).first().current_class_id
+    subj = db_sess.query(K_subject).filter(K_subject.name == nope[work]).first()
+    rasps = db_sess.query(Rasp).filter(Rasp.klass_id == klass_id, Rasp.subject == subj).all()
+    rasp = [el for el in rasps if el.start_time.date() == now]
+    if not rasp:
+        await msg.answer(f"Этого предмета нет в {yep[day]}", reply_markup=week)
+    task.rasp = rasp[0]
+    task.descriptions = msg.text
+    task.creator = f"{msg.from_user.username}"
     task_type = db_sess.query(K_task_type).filter(K_task_type.id == hw_id).first()
-    # ids = db_sess.query(K_subject).filter(K_subject.name == nope[work]).first()
-    # rasp_type = db_sess.query(Rasp).filter(Rasp.subject_id == ids.id).first()
-    # rasp_type.task.append(task)
     task_type.task.append(task)
     db_sess.commit()
     if admin:
@@ -464,17 +477,21 @@ async def photo_hw(msg: types.Message, bot: Bot, state: FSMContext):
                 now += datetime.timedelta(days=1)
             if now.weekday() != day and now.weekday() == 6:
                 rev = True
+        db_sess = db_session.create_session()
+        klass_id = db_sess.query(User).filter(User.telegram_id == msg.from_user.username).first().current_class_id
+        subj = db_sess.query(K_subject).filter(K_subject.name == nope[work]).first()
+        rasps = db_sess.query(Rasp).filter(Rasp.klass_id == klass_id, Rasp.subject == subj).all()
+        rasp = [el for el in rasps if el.start_time.date() == now]
+        if not rasp:
+            await msg.answer(f"Этого предмета нет в {yep[day]}", reply_markup=week)
         file_name = f"photos/{msg.photo[-1].file_id}.jpg"
         await bot.download(msg.photo[-1], destination=file_name)
-        db_sess = db_session.create_session()
         task = Tasks()
         task.descriptions = f'{file_name}'
-        task.creator = f"{msg.from_user.id}"
+        task.creator = f"{msg.from_user.username}"
         task_type = db_sess.query(K_task_type).filter(K_task_type.id == hw_id).first()
-        # ids = db_sess.query(K_subject).filter(K_subject.name == nope[work]).first()
-        # rasp_type = db_sess.query(Rasp).filter(Rasp.subject_id == ids.id).first()
-        # rasp_type.task.append(task)
         task_type.task.append(task)
+        task.rasp = rasp[0]
         db_sess.commit()
         if admin:
             await msg.answer(added_text, reply_markup=ad)
@@ -484,11 +501,28 @@ async def photo_hw(msg: types.Message, bot: Bot, state: FSMContext):
 
 
 @router.message(Command("start"))
-async def start_handler(msg: Message):
-    if admin:
-        await msg.answer(greet_text.format(name=msg.from_user.full_name), reply_markup=ad)
+async def start_handler(msg: Message, state: FSMContext):
+    await msg.answer('Введите название вашего класса')
+    await state.set_state(States.true)
+
+
+@router.message(States.true)
+async def checking(msg: Message, state: FSMContext):
+    db_sess = db_session.create_session()
+    klass = db_sess.query(K_klass).filter(K_klass.name == msg.text).first()
+    if klass:
+        access = db_sess.query(Access).filter(Access.telegram_id == msg.from_user.username,
+                                          Access.klass == klass).first()
+        if access:
+            user = access.user
+            user.current_class_id = klass.id
+            db_sess.commit()
+            await msg.answer('Вы успешно вошли в свой класс!')
+            await state.set_state(States.none)
+        else:
+            await msg.answer('Вы не состоите в этом классе, введите ещё раз')
     else:
-        await msg.answer(greet_text.format(name=msg.from_user.full_name), reply_markup=men)
+        await msg.answer('Такого класса не существует, введите ещё раз!')
 
 
 @router.message(F.text.lower() == "меню")

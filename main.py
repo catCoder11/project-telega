@@ -37,6 +37,22 @@ def get_date(weekday, reverse=False):
     return x
 
 
+def update_dates(current_class, count):
+    date = get_date("0", reverse=True)
+    db_sess = db_session.create_session()
+    cur_rasp = db_sess.query(Rasp).filter(Rasp.klass_id == current_class).all()
+    for i in range(count):
+        for j in range(7):
+            x = date + datetime.timedelta(days=j)
+            old_rasp = [el for el in cur_rasp if el.start_time.date().weekday() == x.weekday()][0]
+            new_rasp = Rasp()
+            new_rasp.teacher = old_rasp.teacher
+            new_rasp.subject = old_rasp.subject
+            new_rasp.klass = old_rasp.klass
+            new_rasp.auditory = old_rasp.auditory
+            new_rasp.start_time = datetime.datetime.combine(x, old_rasp.start_time.time())
+            db_sess.add(new_rasp)
+            db_sess.commit()
 def main():
     if not os.path.isfile("db/school_rasp.db"):
         db_session.global_init("db/school_rasp.db")
