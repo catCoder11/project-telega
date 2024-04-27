@@ -517,7 +517,7 @@ async def checking(msg: Message, state: FSMContext):
             user = access.user
             user.current_class_id = klass.id
             db_sess.commit()
-            await msg.answer('Вы успешно вошли в свой класс!')
+            await msg.answer('Вы успешно вошли в свой класс!', reply_markup=ad)
             await state.set_state(States.none)
         else:
             await msg.answer('Вы не состоите в этом классе, введите ещё раз')
@@ -544,7 +544,7 @@ async def menu(call: types.CallbackQuery):
 
 
 async def main():
-    bot = Bot(token="7087953766:AAHZhEaNOHUwuVr-49sizlgdCG-i7LgZz3w", parse_mode=ParseMode.HTML)
+    bot = Bot(token="7045128937:AAHTFOnWH-5TnaeHTwCqCFAGkoczGs0_57g", parse_mode=ParseMode.HTML)
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(router)
     await bot.delete_webhook(drop_pending_updates=True)
