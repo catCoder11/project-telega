@@ -1,10 +1,17 @@
 Работали: Якушев Олег, Квасников Дмитрий
-библиотеки: 
-aiogram,
-sqlalchemy, 
-flask (все доп библиотеки)
-...
-
+библиотеки:
+sqlalchemy
+flask
+flask_login
+datetime
+os
+random
+string
+flask_wtf
+wtforms
+asyncio
+logging
+aiogram
 как запустить: Открыть файлы test.py и main.py в PyCharm и запустить их
 
 ссылка на сайт: http://localhost:8080/
