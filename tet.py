@@ -516,7 +516,7 @@ async def checking(msg: Message, state: FSMContext):
             user = access.user
             user.current_class_id = klass.id
             db_sess.commit()
-            await msg.answer('Вы успешно вошли в свой класс!')
+            await msg.answer('Вы успешно вошли в свой класс!', reply_markup=ad)
             await state.set_state(States.none)
         else:
             await msg.answer('Вы не состоите в этом классе, введите ещё раз')
