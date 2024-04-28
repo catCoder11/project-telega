@@ -17,7 +17,6 @@ from data.rasp import *
 from data.users import *
 import datetime
 
-
 router = Router()
 
 
@@ -157,7 +156,7 @@ async def get_hw(call: types.CallbackQuery, bot: Bot):
         subj = db.rasp.subject.name
         if db.descriptions[-4:] == '.jpg':
             pht = FSInputFile(f'{db.descriptions}')
-            await call.message.answer(f"{subj}:")
+            await call.message.answer(f"{subj }:")
             await bot.send_photo(chat_id=call.message.chat.id, photo=pht)
         else:
             await call.message.answer(subj, ": ", db.descriptions)
@@ -529,6 +528,7 @@ async def checking(msg: Message, state: FSMContext):
 @router.message(Command('menu'))
 @router.message(States.none)
 async def menu(msg: Message):
+
     if admin:
         await msg.answer(menu_text, reply_markup=ad)
     else:
@@ -544,7 +544,7 @@ async def menu(call: types.CallbackQuery):
 
 
 async def main():
-    bot = Bot(token="7087953766:AAHZhEaNOHUwuVr-49sizlgdCG-i7LgZz3w", parse_mode=ParseMode.HTML)
+    bot = Bot(token="7045128937:AAHTFOnWH-5TnaeHTwCqCFAGkoczGs0_57g", parse_mode=ParseMode.HTML)
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(router)
     await bot.delete_webhook(drop_pending_updates=True)

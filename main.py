@@ -12,7 +12,6 @@ from data.rasp import Rasp
 from flask_login import login_user, logout_user, login_required, current_user, LoginManager
 import os
 
-
 def get_me_back():
     try:
         x = current_user.telegram_id
@@ -38,21 +37,31 @@ def get_date(weekday, reverse=False):
 
 
 def update_dates(current_class, count):
-    date = get_date("0", reverse=True)
     db_sess = db_session.create_session()
+    date = get_date("0")
+    old_date = get_date("0", reverse=True)
+    future_date = old_date + datetime.timedelta(7)
     cur_rasp = db_sess.query(Rasp).filter(Rasp.klass_id == current_class).all()
     for i in range(count):
         for j in range(7):
-            x = date + datetime.timedelta(days=j)
-            old_rasp = [el for el in cur_rasp if el.start_time.date().weekday() == x.weekday()][0]
-            new_rasp = Rasp()
-            new_rasp.teacher = old_rasp.teacher
-            new_rasp.subject = old_rasp.subject
-            new_rasp.klass = old_rasp.klass
-            new_rasp.auditory = old_rasp.auditory
-            new_rasp.start_time = datetime.datetime.combine(x, old_rasp.start_time.time())
-            db_sess.add(new_rasp)
+            date += datetime.timedelta(1)
+            if any(el for el in cur_rasp if el.start_time.date() == date):
+                continue
+            old_rasp = [el for el in cur_rasp if el.start_time.date().weekday() == j and
+                        old_date <= el.start_time.date() < future_date]
+            if old_rasp:
+                for el in old_rasp:
+                    new_rasp = Rasp()
+                    new_rasp.start_time = datetime.datetime.combine(date, el.start_time.time())
+                    new_rasp.teacher = el.teacher
+                    new_rasp.subject = el.subject
+                    new_rasp.klass = el.klass
+                    new_rasp.auditory = el.auditory
+
+                    db_sess.add(new_rasp)
             db_sess.commit()
+
+
 def main():
     if not os.path.isfile("db/school_rasp.db"):
         db_session.global_init("db/school_rasp.db")
@@ -69,16 +78,13 @@ def main():
             subject.name = sbj
             subject.creator = "KotyaPool"
             db_sess.add(subject)
-        db_sess.commit()
         tsk = K_task_type()
         tsk.id = 1
         tsk.name = 'Общая'
-        tsk.creator = 'Просто Олег'
         db_sess.add(tsk)
         tsk = K_task_type()
         tsk.id = 2
         tsk.name = 'Индивидуальная'
-        tsk.creator = 'Просто Олег'
         db_sess.add(tsk)
         db_sess.commit()
     else:
@@ -106,13 +112,19 @@ def main_page():
     check = db_sess.query(Access).filter(Access.telegram_id == current_user.telegram_id).first()
     if not current_class and bool(check):
         return redirect("/choose_class")
+    if check:
+        update_dates(current_class, 2)
     full_rasp = {"понедельник": [], "вторник": [], "среда": [], "четверг": [],
                  "пятница": [], "суббота": [], "воскресенье": []}
     i = 0
     rasp_subj = db_sess.query(Rasp).filter(Rasp.klass_id == current_class).all()
     for key in full_rasp.keys():
-        full_rasp[key] = sorted([el for el in rasp_subj if el.start_time.date().weekday() == i],
-                                key=lambda x: x.start_time)
+        past_date = get_date("0")
+        future_date = past_date + datetime.timedelta(6)
+        day = sorted([el for el in rasp_subj if el.start_time.date().weekday() == i
+                      and past_date <= el.start_time.date() <= future_date],
+                     key=lambda x: x.start_time)
+        full_rasp[key] = day
         i += 1
     check = db_sess.query(Access).filter(Access.klass_id == current_class,
                                 Access.telegram_id == current_user.telegram_id,
